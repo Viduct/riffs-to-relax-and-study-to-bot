@@ -6,10 +6,10 @@ import { FastifyReply, FastifyRequest } from "fastify";
 dotenv.config();
 initSpotify();
 
-const { SONG_POOL_PLAYLIST_ID, PLAYLIST_ID, STATE } = process.env;
+const { SONG_POOL_PLAYLIST_ID, PLAYLIST_ID, STATE, PORT } = process.env;
 
 const fastify = require("fastify")({
-   logger: false,
+   logger: true,
 });
 
 fastify.post("/shuffle", async (request, reply) => {
@@ -47,7 +47,7 @@ fastify.get("/callback", async (request: FastifyRequest, reply: FastifyReply) =>
    return { message: "success" };
 });
 
-fastify.listen(3000, (err, address) => {
+fastify.listen(PORT, (err, address) => {
    if (err) {
       throw err;
    }

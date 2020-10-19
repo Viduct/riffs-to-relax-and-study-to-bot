@@ -1,7 +1,7 @@
 FROM node:12-alpine
 
-ADD dist /project
-ADD .env /project
+ADD . /project
+WORKDIR /project
+RUN npm install && npm run build
 
-EXPOSE 80
-CMD ["node", "/project/app.js"]
+CMD ["node", "/project/dist/app.js"]
