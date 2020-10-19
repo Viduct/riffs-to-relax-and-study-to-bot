@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { shuffle } from "d3-array";
 import { addSongs, getSongs, initSpotify, removeSongs, requestAccess } from "./services";
+import fastifyCors from "fastify-cors";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 dotenv.config();
@@ -11,6 +12,13 @@ const { SONG_POOL_PLAYLIST_ID, PLAYLIST_ID, STATE, PORT } = process.env;
 const fastify = require("fastify")({
    logger: true,
 });
+
+fastify.register(fastifyCors, {
+      origin: () => {
+         return true;
+      },
+   },
+);
 
 fastify.post("/shuffle", async (request, reply) => {
    console.log("Received request to /shuffle");
@@ -47,7 +55,7 @@ fastify.get("/callback", async (request: FastifyRequest, reply: FastifyReply) =>
    return { message: "success" };
 });
 
-fastify.listen(PORT, (err, address) => {
+fastify.listen(PORT, '0.0.0.0', (err, address) => {
    if (err) {
       throw err;
    }
