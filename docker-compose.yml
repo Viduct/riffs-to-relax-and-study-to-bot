@@ -1,0 +1,21 @@
+version: '3'
+services:
+  server:
+    build: .
+    restart: always
+    container_name: riffs-to-relax-and-study-to-bot
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.riffs-to-relax-and-study-to-bot-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.riffs-to-relax-and-study-to-bot-http.entrypoints=web"
+      - "traefik.http.routers.riffs-to-relax-and-study-to-bot-http.rule=Host(`riffs-to-relax.viduct.de`)"
+      - "traefik.http.routers.riffs-to-relax-and-study-to-bot-http.middlewares=riffs-to-relax-and-study-to-bot-https@docker"
+      - "traefik.http.routers.riffs-to-relax-and-study-to-bot.entrypoints=websecure"
+      - "traefik.http.routers.riffs-to-relax-and-study-to-bot.rule=Host(`riffs-to-relax.viduct.de`)"
+      - "traefik.http.routers.riffs-to-relax-and-study-to-bot.tls=true"
+      - "traefik.http.routers.riffs-to-relax-and-study-to-bot.tls.certresolver=riffs-to-relax-and-study-to-bot-resolver"
+
+networks:
+  default:
+    external:
+      name: prod

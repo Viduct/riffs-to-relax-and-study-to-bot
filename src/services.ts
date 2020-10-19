@@ -9,46 +9,51 @@ const {
    ACCESS_TOKEN,
    REFRESH_TOKEN,
    CODE,
+   STATE,
+   CALLBACK_URL,
 } = process.env;
 
-let spotifyApi;
+let spotifyApi: SpotifyWebApi;
 
-export const initSpotify = () => {
+export const initSpotify = async () => {
    spotifyApi = new SpotifyWebApi({
       clientId: SPOTIFY_CLIENT_ID,
       clientSecret: SPOTIFY_CLIENT_SECRET,
-      redirectUri: "http://localhost:3000/callback",
+      redirectUri: CALLBACK_URL,
    });
    spotifyApi.setAccessToken(ACCESS_TOKEN);
    spotifyApi.setRefreshToken(REFRESH_TOKEN);
 
    const scopes = ["playlist-modify-private", "playlist-modify-public", "playlist-read-private"];
-   const state = "some-state-of-my-choice";
 
-// Create the authorization URL
-   const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
+   const authorizeURL = spotifyApi.createAuthorizeURL(scopes, STATE);
 
    console.log(authorizeURL);
 
-   if (!ACCESS_TOKEN) {
-      spotifyApi.authorizationCodeGrant(CODE).then(
-         (data) => {
-            console.log("The token expires in " + data.body["expires_in"]);
-            console.log("The access token is " + data.body["access_token"]);
-            console.log("The refresh token is " + data.body["refresh_token"]);
-
-            // Set the access token on the API object to use it in later calls
-            spotifyApi.setAccessToken(data.body["access_token"]);
-            spotifyApi.setRefreshToken(data.body["refresh_token"]);
-         },
-         (err) => {
-            console.log("Something went wrong!", err);
-         },
-      );
+   if (!ACCESS_TOKEN && CODE) {
+      await requestAccess(CODE);
    }
 };
 
-export const getSongs = async (playlist) => {
+export const requestAccess = async (code) => {
+   return await spotifyApi.authorizationCodeGrant(code).then(
+      (data) => {
+         console.log("Got access token");
+         console.log("The token expires in " + data.body["expires_in"]);
+         console.log("The access token is " + data.body["access_token"]);
+         console.log("The refresh token is " + data.body["refresh_token"]);
+
+         // Set the access token on the API object to use it in later calls
+         spotifyApi.setAccessToken(data.body["access_token"]);
+         spotifyApi.setRefreshToken(data.body["refresh_token"]);
+      },
+      (err) => {
+         console.log("Something went wrong!", err);
+      },
+   );
+}
+
+export const getSongs = async (playlist): Promise<any> => {
    return await spotifyApi.getPlaylistTracks(playlist).then((data) => {
       console.log(`Getting songs from ${playlist} successful`);
       return data.body.items.map(item => ({

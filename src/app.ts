@@ -1,17 +1,19 @@
 import dotenv from "dotenv";
 import { shuffle } from "d3-array";
-import { addSongs, getSongs, initSpotify, removeSongs } from "./services";
+import { addSongs, getSongs, initSpotify, removeSongs, requestAccess } from "./services";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 dotenv.config();
 initSpotify();
 
-const { SONG_POOL_PLAYLIST_ID, PLAYLIST_ID } = process.env;
+const { SONG_POOL_PLAYLIST_ID, PLAYLIST_ID, STATE } = process.env;
 
 const fastify = require("fastify")({
    logger: false,
 });
 
 fastify.post("/shuffle", async (request, reply) => {
+   console.log("Received request to /shuffle");
    const songPool = await getSongs(SONG_POOL_PLAYLIST_ID);
    const oldSongs = await getSongs(PLAYLIST_ID);
 
@@ -23,6 +25,26 @@ fastify.post("/shuffle", async (request, reply) => {
 
    reply.type("application/json").code(200);
    return { hello: "world" };
+});
+
+fastify.get("/callback", async (request: FastifyRequest, reply: FastifyReply) => {
+   const { code, state } = request.query as any;
+
+   console.log("Received callback from Spotify");
+
+   if (state !== STATE) {
+      console.log("State doesn't match");
+      console.log(state);
+      console.log(STATE);
+      reply.type("application/json").code(403);
+      return { message: "error" };
+   }
+
+   console.log("Will request access token");
+   await requestAccess(code);
+
+   reply.type("application/json").code(200);
+   return { message: "success" };
 });
 
 fastify.listen(3000, (err, address) => {
