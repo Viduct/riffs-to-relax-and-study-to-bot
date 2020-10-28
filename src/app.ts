@@ -5,13 +5,14 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { PLAYLIST_ID, PORT, SECURITY_KEY, SONG_POOL_PLAYLIST_ID, STATE, URL_SUFFIX } from "./context";
 
 const initServer = async () => {
-   await initSpotify();
 
    const fastify: FastifyInstance = require("fastify")({
       logger: {
          level: "info",
       },
    });
+
+   await initSpotify(fastify);
 
    fastify.register(fastifyCors, {
          origin: "*",

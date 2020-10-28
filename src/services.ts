@@ -13,7 +13,7 @@ import {
 let spotifyApi: SpotifyWebApi;
 let fastify: FastifyInstance;
 
-export const initSpotify = async () => {
+export const initSpotify = async (fastifyInstance: FastifyInstance) => {
    spotifyApi = new SpotifyWebApi({
       clientId: SPOTIFY_CLIENT_ID,
       clientSecret: SPOTIFY_CLIENT_SECRET,
@@ -25,6 +25,8 @@ export const initSpotify = async () => {
    const scopes = ["playlist-modify-private", "playlist-modify-public", "playlist-read-private"];
 
    const authorizeURL = spotifyApi.createAuthorizeURL(scopes, STATE);
+
+   fastify = fastifyInstance;
 
    fastify.log.info(authorizeURL);
 
