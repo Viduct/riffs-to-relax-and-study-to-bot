@@ -2,7 +2,7 @@ import { shuffle } from "d3-array";
 import { addSongs, getSongs, initSpotify, refreshAccess, removeSongs, requestAccess } from "./services";
 import fastifyCors from "fastify-cors";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { PLAYLIST_ID, PORT, SECURITY_KEY, SONG_POOL_PLAYLIST_ID, STATE, URL_SUFFIX } from "./context";
+import { PLAYLIST_ID, PORT, SECURITY_TOKEN, SONG_POOL_PLAYLIST_ID, STATE, URL_SUFFIX } from "./context";
 
 const initServer = async () => {
 
@@ -19,27 +19,40 @@ const initServer = async () => {
       },
    );
 
-   fastify.post(`/shuffle-${URL_SUFFIX}`, async (request: FastifyRequest, reply: FastifyReply) => {
-      if (request.body["token"] !== SECURITY_KEY) {
-         reply.type("application/json").code(403);
-         return { message: `Not authorized` };
-      }
+   fastify.addSchema({
+      $id: "shuffle",
+      type: "object",
+      properties: {
+         token: { type: "string" },
+      },
+   });
 
-      fastify.log.info(`Received request to /shuffle`);
+   fastify.post(`/shuffle-${URL_SUFFIX}`, {
+      schema: {
+         body: { $ref: "shuffle#" },
+      },
+      handler: async (request: FastifyRequest, reply: FastifyReply) => {
+         if (request.body["token"] !== SECURITY_TOKEN) {
+            reply.type("application/json").code(401);
+            return { message: `Not authorized` };
+         }
 
-      await refreshAccess();
+         fastify.log.info(`Received request to /shuffle`);
 
-      const songPool = await getSongs(SONG_POOL_PLAYLIST_ID);
-      const oldSongs = await getSongs(PLAYLIST_ID);
+         await refreshAccess();
 
-      if (oldSongs) {
-         await removeSongs(PLAYLIST_ID, oldSongs);
-      }
+         const songPool = await getSongs(SONG_POOL_PLAYLIST_ID);
+         const oldSongs = await getSongs(PLAYLIST_ID);
 
-      await addSongs(PLAYLIST_ID, shuffle(songPool.map(song => song.uri)).slice(0, 99));
+         if (oldSongs) {
+            await removeSongs(PLAYLIST_ID, oldSongs);
+         }
 
-      reply.type("application/json").code(200);
-      return { message: `Successfully shuffled playlist with ID ${SONG_POOL_PLAYLIST_ID}.` };
+         await addSongs(PLAYLIST_ID, shuffle(songPool.map(song => song.uri)).slice(0, 99));
+
+         reply.type("application/json").code(200);
+         return { message: `Successfully shuffled playlist with ID ${SONG_POOL_PLAYLIST_ID}.` };
+      },
    });
 
    fastify.get("/callback", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -49,7 +62,7 @@ const initServer = async () => {
 
       if (state !== STATE) {
          fastify.log.info(`State doesn't match`);
-         reply.type("application/json").code(403);
+         reply.type("application/json").code(401);
          return { message: "error" };
       }
 
